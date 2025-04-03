@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -17,14 +18,12 @@ app.post('/generate', upload.single('image'), async (req, res) => {
 
   const parts = [];
 
-  parts.push({
-    text: `Generate an image in ${style} style based on this prompt: ${prompt}`
-  });
+  parts.push({ text: `Generate an image in ${style} style based on this prompt: ${prompt}` });
 
   if (imageBuffer) {
     parts.push({
-      inline_data: {
-        mime_type: req.file.mimetype,
+      inlineData: {
+        mimeType: req.file.mimetype,
         data: imageBuffer
       }
     });
@@ -32,21 +31,22 @@ app.post('/generate', upload.single('image'), async (req, res) => {
 
   const requestBody = {
     model: "gemini-2.0-flash-exp-image-generation",
-    contents: [{
-      role: "user",
-      parts: parts
-    }],
-    generation_config: {
-      response_modality: ["TEXT", "IMAGE"]
+    contents: [
+      {
+        role: "user",
+        parts: parts
+      }
+    ],
+    config: {
+      responseModalities: ["Text", "Image"]
     }
   };
 
-  // 🔍 Log Request to Gemini
   console.log("🟡 Sending to Gemini API:\n", JSON.stringify(requestBody, null, 2));
 
   try {
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=" + GEMINI_API_KEY,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -57,15 +57,14 @@ app.post('/generate', upload.single('image'), async (req, res) => {
     const result = await response.json();
     console.log("🟢 Gemini API Response:\n", JSON.stringify(result, null, 2));
 
-    const imagePart = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data?.data);
+    const imagePart = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.data);
 
     if (!imagePart) {
       return res.status(500).json({ error: "Image not found in response", full: result });
     }
 
-    const imageData = imagePart.inline_data.data;
+    const imageData = imagePart.inlineData.data;
     res.json({ imageUrl: `data:image/png;base64,${imageData}` });
-
   } catch (err) {
     console.error("🔴 Gemini Error:", err.message);
     res.status(500).json({ error: "Error during generation.", details: err.message });
