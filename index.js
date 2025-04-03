@@ -1,4 +1,3 @@
-// index.js
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -42,6 +41,9 @@ app.post('/generate', upload.single('image'), async (req, res) => {
     }
   };
 
+  // 🔍 Log Request to Gemini
+  console.log("🟡 Sending to Gemini API:\n", JSON.stringify(requestBody, null, 2));
+
   try {
     const response = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=" + GEMINI_API_KEY,
@@ -53,6 +55,7 @@ app.post('/generate', upload.single('image'), async (req, res) => {
     );
 
     const result = await response.json();
+    console.log("🟢 Gemini API Response:\n", JSON.stringify(result, null, 2));
 
     const imagePart = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data?.data);
 
@@ -64,7 +67,7 @@ app.post('/generate', upload.single('image'), async (req, res) => {
     res.json({ imageUrl: `data:image/png;base64,${imageData}` });
 
   } catch (err) {
-    console.error(err);
+    console.error("🔴 Gemini Error:", err.message);
     res.status(500).json({ error: "Error during generation.", details: err.message });
   }
 });
