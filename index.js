@@ -16,28 +16,25 @@ app.post('/generate', upload.single('image'), async (req, res) => {
   const style = req.body.style;
   const imageBuffer = req.file ? req.file.buffer.toString('base64') : null;
 
-  const parts = [];
-
-  parts.push({ text: `Generate an image in ${style} style based on this prompt: ${prompt}` });
-
-  if (imageBuffer) {
-    parts.push({
-      inlineData: {
-        mimeType: req.file.mimetype,
-        data: imageBuffer
-      }
-    });
-  }
+  const contents = [
+    {
+      role: "user",
+      parts: [
+        { text: `Generate an image in ${style} style based on this prompt: ${prompt}` },
+        ...(imageBuffer ? [{
+          inlineData: {
+            mimeType: req.file.mimetype,
+            data: imageBuffer
+          }
+        }] : [])
+      ]
+    }
+  ];
 
   const requestBody = {
     model: "gemini-2.0-flash-exp-image-generation",
-    contents: [
-      {
-        role: "user",
-        parts: parts
-      }
-    ],
-    config: {
+    contents: contents,
+    generationConfig: {
       responseModalities: ["Text", "Image"]
     }
   };
